@@ -21,14 +21,43 @@
 </head>
 <body>
 <script type="module">
-    import {ThreeEngine} from "../js/utils/utils_three.js";
+    import {ThreeEngine, get_default_lil_gui} from "../js/utils/utils_three.js";
+    function generatePoints(N) {
+        let points = [];
+        for (let i = 0; i < N; i++) {
+            let s1 = Math.random() > 0.5 ? -1 : 1;
+            let s2 = Math.random() > 0.5 ? -1 : 1;
 
+            let x = s1 * Math.random(); // Generates a random x coordinate
+            let y = s2 * Math.random(); // Generates a random y coordinate
+            points.push({x: x, y: y});
+        }
+        return points;
+    }
+    let engine = ThreeEngine.new_default_2d();
     // todo: recreate this visualization, demonstrating your understanding of SO(2)
     // todo: https://yale-cpsc-487-587-internal-djrakita-c95fa6c3239a481a48d29a6b0fd.gitlab.io/html/visualizations/point_mapping_2D_so2.html
     // todo: (no need to draw the unit circle here)
     // todo: or, feel free to come up with any create visualization here that demonstrates your understanding of SO(2)
+    let points = generatePoints(20);
+    let settings = {
+        theta: 0,
+        point_size: .03
+    };
+    let gui = get_default_lil_gui();
+    gui.add( settings, 'theta', -Math.PI, Math.PI );
+    gui.add( settings, 'point_size', 0.001, 0.03 );
 
+    engine.animation_loop(()=> {
 
+        engine.draw_debug_vector([0.0, 0.0], [Math.cos(settings.theta), Math.sin(settings.theta)], 0.01, 0.15, "red");
+        engine.draw_debug_vector([0.0, 0.0], [Math.cos(settings.theta + Math.PI / 2), Math.sin(settings.theta + Math.PI / 2)], 0.01, 0.15, "green");
+        for (let point of points){
+            let x = point.x * Math.cos(settings.theta) - point.y * Math.sin(settings.theta);
+            let y = point.x * Math.sin(settings.theta) + point.y * Math.cos(settings.theta);
+            engine.draw_debug_sphere([x,y], settings.point_size, "black");
+        }
+    });
 </script>
 </body>
 </html>

@@ -30,10 +30,15 @@
     // todo: hint: you'll have to use the refresh_displays function.
 
     let engine = ThreeEngine.new_default_3d();
-
+    const print_str = {
+        str: ""
+    };
     let gui = get_default_lil_gui();
-
+    gui.add(print_str, "str").disable()
     engine.animation_loop(() => {
+
+        print_str.str = "Time Elapsed: " + engine.get_time_elapsed();
+        refresh_displays(gui);
 
     });
 

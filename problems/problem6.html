@@ -21,13 +21,97 @@
 </head>
 <body>
 <script type="module">
-    import {ThreeEngine} from "../js/utils/utils_three.js";
+    import {ThreeEngine, get_default_lil_gui, refresh_displays} from "../js/utils/utils_three.js";
+    function calculateNorm(xA, yA, thetaA, xB, yB, thetaB) {
+        // Convert degrees to radians
+        const radA = thetaA;
+        const radB = thetaB;
 
+        // Define A and B using x, y, and theta
+        const A = [
+            [Math.cos(radA), -Math.sin(radA), xA],
+            [Math.sin(radA), Math.cos(radA), yA],
+            [0, 0, 1]
+        ];
+
+        const B = [
+            [Math.cos(radB), -Math.sin(radB), xB],
+            [Math.sin(radB), Math.cos(radB), yB],
+            [0, 0, 1]
+        ];
+        console.log(A)
+        // Compute A inverse
+        const AInv = [
+            [A[0][0], A[1][0], -(A[0][0]*xA + A[1][0]*yA)],
+            [A[0][1], A[1][1], -(A[0][1]*xA + A[1][1]*yA)],
+            [0, 0, 1]
+        ];
+
+        // Compute displacement disp(A, B) = A^-1 * B
+        let disp = new Array(3).fill(0).map(() => new Array(3).fill(0));
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                for (let k = 0; k < 3; k++) {
+                    disp[i][j] += AInv[i][k] * B[k][j];
+                }
+            }
+        }
+        console.log(disp);
+        const thetaDisp = Math.atan2(disp[1][0], disp[0][0]);
+        const tx = disp[0][2];
+        const ty = disp[1][2];
+
+        // Calculate a1, a2, and a3 using the provided formulas
+        let a1 = thetaDisp;
+        let p, q;
+        if (Math.abs(a1) < 0.0001) {
+            p = 1 - a1**2 / 6 + a1**4 / 120;
+            q = a1 / 2 - a1**3 / 24 + a1**5 / 720;
+        } else {
+            p = Math.sin(a1) / a1;
+            q = (1 - Math.cos(a1)) / a1;
+        }
+        const matrix = [[p, q], [-q, p]];
+        const a2 = (matrix[0][0] * tx + matrix[0][1] * ty) / (p**2 + q**2);
+        const a3 = (matrix[1][0] * tx + matrix[1][1] * ty) / (p**2 + q**2);
+        // Calculate the norm ||ln(disp)^v||_2
+        const norm = Math.sqrt(a1*a1 + a2*a2 + a3*a3);
+
+        return norm;
+    }
     // todo: recreate this visualization, demonstrating your understanding of displacement-based distance in SE(2)
     // todo: https://yale-cpsc-487-587-internal-djrakita-c95fa6c3239a481a48d29a6b0fd.gitlab.io/html/visualizations/SE2_distance2.html
     // todo: make sure you are using the displacement-based distance!
     // todo: or, feel free to come up with any create visualization here that demonstrates your understanding of SE(2) distance
+    let engine = ThreeEngine.new_default_2d();
+    let settings = {
+        theta1: 0,
+        x1: 0.0,
+        y1: 0.0,
+        theta2: 0.0,
+        x2: 0.0,
+        y2: 0.0,
+        point_size: .03,
+        disp: 0
+    };
+    let gui = get_default_lil_gui();
+    gui.add( settings, 'theta1', -Math.PI, Math.PI );
+    gui.add( settings, 'x1', -2, 2);
+    gui.add( settings, 'y1', -2, 2);
+    gui.add( settings, 'theta2', -Math.PI, Math.PI );
+    gui.add( settings, 'x2', -2, 2);
+    gui.add( settings, 'y2', -2, 2);
 
+    gui.add( settings, 'disp');
+    gui.add( settings, 'point_size', 0.001, 0.03 );
+    engine.animation_loop(()=> {
+        engine.draw_debug_vector([settings.x1, settings.y1], [settings.x1 + Math.cos(settings.theta1), settings.y1 + Math.sin(settings.theta1)], 0.01, 0.15, "red");
+        engine.draw_debug_vector([settings.x1, settings.y1], [settings.x1 + Math.cos(settings.theta1 + Math.PI / 2), settings.y1 + Math.sin(settings.theta1 + Math.PI / 2)], 0.01, 0.15, "green");
+        engine.draw_debug_vector([settings.x2, settings.y2], [settings.x2 + Math.cos(settings.theta2), settings.y2 + Math.sin(settings.theta2)], 0.01, 0.15, "red");
+        engine.draw_debug_vector([settings.x2, settings.y2], [settings.x2 + Math.cos(settings.theta2 + Math.PI / 2), settings.y2 + Math.sin(settings.theta2 + Math.PI / 2)], 0.01, 0.15, "green");
+        settings.disp = calculateNorm(settings.x1, settings.y1, settings.theta1, settings.x2, settings.y2, settings.theta2)
+        refresh_displays(gui);
+    });
 </script>
 </body>
 </html>
